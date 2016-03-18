@@ -16,13 +16,13 @@ return [
         'name' => 'anax-base',
     ],
 
-    
+
     /**
      * Add default views.
      */
     'views' => [
-        ['region' => 'header', 'template' => 'welcome/header', 'data' => [], 'sort' => -1],
-        ['region' => 'footer', 'template' => 'welcome/footer', 'data' => [], 'sort' => -1],
+        ['region' => 'header', 'template' => 'default/header', 'data' => [], 'sort' => -1],
+        ['region' => 'footer', 'template' => 'default/footer', 'data' => [], 'sort' => -1],
     ],
 
 
