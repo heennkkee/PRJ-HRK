@@ -35,6 +35,13 @@ class CDIFactoryDefault extends CDI
         $this->set('form', '\Mos\HTMLForm\CForm');
         $this->set('rss', '\henaro\rss\Crss');
 
+        $this->setShared('db', function () {
+            $db = new \Mos\Database\CDatabaseBasic();
+            $db->setOptions(require ANAX_APP_PATH . 'config/database_sqlite.php');
+            $db->connect();
+            return $db;
+        });
+
         $this->setShared('log', function () {
             $log = new \Anax\Log\CLogger();
             $log->setContext('development');

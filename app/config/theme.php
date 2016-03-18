@@ -22,6 +22,9 @@ return [
      */
     'views' => [
         ['region' => 'header', 'template' => 'default/header', 'data' => [], 'sort' => -1],
+        ['region' => 'navbar', 'template' => ['callback' => function () {
+            return $this->di->navbar->create();
+        }], 'data' => [], 'sort' => -1],
         ['region' => 'footer', 'template' => 'default/footer', 'data' => [], 'sort' => -1],
     ],
 
@@ -34,8 +37,10 @@ return [
         // Language for this page.
         'lang' => 'sv',
 
+        'title' => 'SuperDuperpage',
+        
         // Append this value to each <title>
-        'title_append' => ' | Anax a web template',
+        'title_append' => ' - the questions',
 
         // Stylesheets
         'stylesheets' => ['css/style.css'],

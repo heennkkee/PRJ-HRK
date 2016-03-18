@@ -18,7 +18,8 @@
         "mos/ctextfilter": "dev-master",
         "mos/cform": "2.x-dev",
         "henaro/crss": "dev-master",
-        "geshi/geshi": "dev-master"
+        "geshi/geshi": "dev-master",
+        "mos/cdatabase": "dev-master"
     },
     "autoload": {
         "psr-4": { "Anax\\": "src/" }
