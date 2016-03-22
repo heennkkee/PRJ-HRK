@@ -30,6 +30,14 @@ $app->router->add('userSetup', function () use ($app) {
         $now,
         1337
     ]);
+
+    $app->db->execute([
+        'user',
+        'User McUser',
+        password_hash('user', PASSWORD_DEFAULT),
+        $now,
+        0
+    ]);
 });
 
 $app->router->add('logout', function () use ($app) {
@@ -186,6 +194,8 @@ $app->router->add('ask', function () use ($app) {
 });
 
 $app->router->add('rss', function () use ($app) {
+    //$app->rss->clearRSS();
+    $app->rss->insertRSS(['LINK' => 'http://test.com', 'DESCRIPTION' => 'nytt rss "item"', 'TITLE' => 'Titel']);
     $app->rss->getRSS();
     die();
 });

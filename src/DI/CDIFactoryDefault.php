@@ -33,7 +33,11 @@ class CDIFactoryDefault extends CDI
         });
 
         $this->set('form', '\Mos\HTMLForm\CForm');
-        $this->set('rss', '\henaro\rss\Crss');
+
+        $this->set('rss', function () {
+            $rss = new \henaro\rss\Crss(['feedDescription' => ['title' => 'Amazing questions', 'link' => $this->url->create('')]]);
+            return $rss;
+        });
 
         $this->setShared('db', function () {
             $db = new \Mos\Database\CDatabaseBasic();
@@ -61,7 +65,7 @@ class CDIFactoryDefault extends CDI
             $url->setStaticSiteUrl($this->request->getSiteUrl());
             $url->setStaticBaseUrl($this->request->getBaseUrl());
             $url->setScriptName($this->request->getScriptName());
-            $url->setUrlType($url::URL_APPEND);
+            $url->setUrlType($url::URL_CLEAN);
             return $url;
         });
 
