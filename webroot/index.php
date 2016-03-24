@@ -66,6 +66,7 @@ $app->router->add('logout', function () use ($app) {
     ]);
 });
 
+$userstatus = 'Hejsan';
 
 $app->router->add('login', function () use ($app) {
 
@@ -195,7 +196,7 @@ $app->router->add('ask', function () use ($app) {
 
 $app->router->add('rss', function () use ($app) {
     //$app->rss->clearRSS();
-    $app->rss->insertRSS(['LINK' => 'http://test.com', 'DESCRIPTION' => 'nytt rss "item"', 'TITLE' => 'Titel']);
+    //$app->rss->insertRSS(['LINK' => 'http://test.com', 'DESCRIPTION' => 'nytt rss "item"', 'TITLE' => 'Titel']);
     $app->rss->getRSS();
     die();
 });

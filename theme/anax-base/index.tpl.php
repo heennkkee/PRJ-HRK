@@ -12,7 +12,7 @@
 </head>
 
 <body>
-    
+<?=$userstatus?>
 <div id='wrapper'>
 
 <div id='header'>

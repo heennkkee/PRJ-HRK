@@ -38,7 +38,7 @@ return [
         'lang' => 'sv',
 
         'title' => 'SuperDuperpage',
-        
+
         // Append this value to each <title>
         'title_append' => ' - the questions',
 
@@ -55,7 +55,8 @@ return [
         'modernizr' => 'js/modernizr.js',
 
         // Path to jquery or null to disable
-        'jquery' => '//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js',
+            'jquery' => null,
+    //    'jquery' => '//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js',
 
         // Array with javscript-files to include
         'javascript_include' => [],
