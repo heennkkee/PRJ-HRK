@@ -12,12 +12,16 @@
 </head>
 
 <body>
-<?=$userstatus?>
 <div id='wrapper'>
 
 <div id='header'>
 <?php if(isset($header)) echo $header?>
 <?php $this->views->render('header')?>
+</div>
+
+<div id="user">
+    <?php if(isset($user)) echo $user?>
+    <?php $this->views->render('user')?>
 </div>
 
 <?php if ($this->views->hasContent('navbar')) : ?>

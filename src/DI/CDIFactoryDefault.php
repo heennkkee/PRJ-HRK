@@ -26,6 +26,12 @@ class CDIFactoryDefault extends CDI
         $this->set('route', '\Anax\Route\CRouteBasic');
         $this->set('view', '\Anax\View\CViewBasic');
 
+        $this->set('QuestionsController', function () {
+            $controller = new \Anax\Questions\CQuestionsController();
+            $controller->setDI($this);
+            return $controller;
+        });
+
         $this->set('ErrorController', function () {
             $controller = new \Anax\MVC\ErrorController();
             $controller->setDI($this);

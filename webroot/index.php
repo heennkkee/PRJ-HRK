@@ -3,49 +3,14 @@
 require __DIR__.'/config_with_app.php';
 $app->session();
 
-$app->router->add('userSetup', function () use ($app) {
+if (isset($_SESSION['USER'])) {
 
-    $app->db->dropTableIfExists('USERS')->execute();
-
-    $app->db->createTable('USERS', [
-        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
-        'ACRONYM' => ['varchar(20)', 'unique', 'not null'],
-        'NAME' => ['varchar(80)'],
-        'PASSWORD' => ['varchar(255)'],
-        'REGISTERED' => ['datetime'],
-        'REP' => ['INTEGER', 'DEFAULT 0']
-    ])->execute();
-
-    $app->db->insert(
-        'USERS',
-        ['ACRONYM', 'NAME', 'PASSWORD', 'REGISTERED', 'REP']
-    );
-
-    $now = gmdate('Y-m-d H:i:s');
-
-    $app->db->execute([
-        'admin',
-        'Administrator',
-        password_hash('admin', PASSWORD_DEFAULT),
-        $now,
-        1337
-    ]);
-
-    $app->db->execute([
-        'user',
-        'User McUser',
-        password_hash('user', PASSWORD_DEFAULT),
-        $now,
-        0
-    ]);
-});
-
-$app->router->add('logout', function () use ($app) {
-    $form = $app->form->create([], [
+    $form = $app->form->create(['id' => 'login'], [
         'submit' => [
             'type'      => 'submit',
             'value'     => 'Logga ut',
-            'callback'  => function ($form) use ($app) {
+            'label'     => 'Välkommen ' . $_SESSION['USER']['NAME'],
+            'callback'  => function () {
                 unset($_SESSION['USER']);
                 return true;
             }
@@ -58,25 +23,11 @@ $app->router->add('logout', function () use ($app) {
         $url = $app->url->create('');
         $app->response->redirect($url);
     }
-
-
-    $app->views->add('default/page', [
-        'title' => 'Logga ut',
-        'content' => $form->getHTML()
-    ]);
-});
-
-$userstatus = 'Hejsan';
-
-$app->router->add('login', function () use ($app) {
-
-    if (isset($_SESSION['USER'])) {
-        $app->response->redirect($app->url->create('logout'));
-    }
-
-    $form = $app->form->create([], [
+} else {
+    $form = $app->form->create(['id' => 'login'], [
        'acronym' => [
            'type'        => 'text',
+           'autofocus'   => true,
            'label'       => 'Inlogg',
            'required'    => true,
            'validation'  => ['not_empty'],
@@ -115,82 +66,106 @@ $app->router->add('login', function () use ($app) {
         $url = $app->request->getCurrentUrl();
         $app->response->redirect($url);
     }
+}
 
-    $app->views->add('default/page', [
-        'title' => 'Login',
-        'content' => $form->getHTML()
+$app->views->add('prj-hrk/user', ['content' => $form->getHTML(['use_fieldset' => false])], 'header');
+
+if (!isset($_SESSION['USER'])) {
+    $app->views->add('error/403', [], 'main');
+    $app->theme->render();
+    die();
+}
+
+$app->router->add('questions', function () use ($app) {
+
+});
+
+$app->router->add('setup', function () use ($app) {
+    $app->db->dropTableIfExists('USER2COMMENTVOTE')->execute();
+    $app->db->dropTableIfExists('COMMENTS')->execute();
+
+    $app->db->execute('CREATE TABLE USER2COMMENTVOTE (
+        ACRONYM VARCHAR(20),
+        ID INTEGER,
+        SCORE INTEGER,
+        UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
+    )');
+
+    $app->db->createTable('COMMENTS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'TEXT' => ['blob'],
+        'CREATED' => ['datetime'],
+        'AUTHOR' => ['varchar(80)'],
+        'QUESTION_ID' => ['varchar(80)'],
+        'COMMENT_ID' => ['varchar(80)']
+    ])->execute();
+});
+
+$app->router->add('test', function () use ($app) {
+    $res = $app->db->executeFetchAll('SELECT * FROM USER2COMMENTVOTE');
+    dump($res);
+    $res = $app->db->executeFetchAll('SELECT TOTAL(SCORE) AS Score FROM USER2COMMENTVOTE', []);
+    dump($res);
+});
+
+$app->router->add('questionSetup', function () use ($app) {
+    $app->db->dropTableIfExists('QUESTIONS')->execute();
+
+    $app->db->createTable('QUESTIONS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'TITLE' => ['varchar(80)', 'not null'],
+        'TEXT' => ['blob'],
+        'ANSWERED' => ['integer', 'DEFAULT 0'],
+        'CREATED' => ['datetime'],
+        'EDITED' => ['INTEGER'],
+        'AUTHOR' => ['varchar(80)'],
+    ])->execute();
+
+});
+
+$app->router->add('userSetup', function () use ($app) {
+
+    $app->db->dropTableIfExists('USERS')->execute();
+
+    $app->db->createTable('USERS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'ACRONYM' => ['varchar(20)', 'unique', 'not null'],
+        'NAME' => ['varchar(80)'],
+        'PASSWORD' => ['varchar(255)'],
+        'DESCRIPTION' => ['blob', 'DEFAULT ""'],
+        'GRAVATAR' => ['varchar(255)', 'DEFAULT ""'],
+        'REGISTERED' => ['datetime'],
+        'REP' => ['INTEGER', 'DEFAULT 0']
+    ])->execute();
+
+    $app->db->insert(
+        'USERS',
+        ['ACRONYM', 'NAME', 'PASSWORD', 'REGISTERED', 'REP']
+    );
+
+    $now = gmdate('Y-m-d H:i:s');
+
+    $app->db->execute([
+        'admin',
+        'Administrator',
+        password_hash('admin', PASSWORD_DEFAULT),
+        $now,
+        1337
+    ]);
+
+    $app->db->execute([
+        'doe',
+        'Doe McDoe',
+        password_hash('doe', PASSWORD_DEFAULT),
+        $now,
+        0
     ]);
 });
 
-if (!isset($_SESSION['acronym'])) {
-    die(include(ANAX_APP_PATH . 'view/error/403.tpl.php'));
-} elseif (strlen($_SESSION['acronym']) < 2) {
-    die(include(ANAX_APP_PATH . 'view/error/403.tpl.php'));
-}
 
 $app->router->add('', function () use ($app) {
     $app->views->add('prj-hrk/question', [
         'content' => '<h2>Välkommen till indexsidan</h2>',
-    ]);
-});
-
-$app->router->add('ask', function () use ($app) {
-    $form = $app->form->create([], [
-       'name' => [
-           'type'        => 'text',
-           'label'       => 'Name of contact person:',
-           'required'    => true,
-           'validation'  => ['not_empty'],
-       ],
-       'email' => [
-           'type'        => 'text',
-           'required'    => true,
-           'validation'  => ['not_empty', 'email_adress'],
-       ],
-       'phone' => [
-           'type'        => 'text',
-           'required'    => true,
-           'validation'  => ['not_empty', 'numeric'],
-       ],
-       'submit' => [
-           'type'      => 'submit',
-           'callback'  => function ($form) {
-               $form->AddOutput("<p><i>DoSubmit(): Form was submitted. Do stuff (save to database) and return true (success) or false (failed processing form)</i></p>");
-               $form->AddOutput("<p><b>Name: " . $form->Value('name') . "</b></p>");
-               $form->AddOutput("<p><b>Email: " . $form->Value('email') . "</b></p>");
-               $form->AddOutput("<p><b>Phone: " . $form->Value('phone') . "</b></p>");
-               $form->saveInSession = true;
-               return true;
-           }
-       ],
-       'submit-fail' => [
-           'type'      => 'submit',
-           'callback'  => function ($form) {
-               $form->AddOutput("<p><i>DoSubmitFail(): Form was submitted but I failed to process/save/validate it</i></p>");
-               return false;
-           }
-       ],
-    ]);
-
-    // Check the status of the form
-    $status = $form->check();
-
-    if ($status === true) {
-
-        // What to do if the form was submitted?
-        $form->AddOUtput("<p><i>Form was submitted and the callback method returned true.</i></p>");
-        $url = $app->request->getCurrentUrl();
-        $app->response->redirect($url);
-    } else if ($status === false) {
-
-        // What to do when form could not be processed?
-        $form->AddOutput("<p><i>Form was submitted and the Check() method returned false.</i></p>");
-        $url = $app->request->getCurrentUrl();
-        $app->response->redirect($url);
-    }
-
-    $app->views->add('prj-hrk/question', [
-        'content' => '<h2>Ställ en fråga</h2>' . $form->getHTML(),
     ]);
 });
 

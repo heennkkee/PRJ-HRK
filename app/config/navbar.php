@@ -15,14 +15,13 @@ return [
         'home'  => [
             'text'  => 'Start',
             'url'   => $this->di->get('url')->create(''),
-            'title' => 'Home'
+            'title' => 'Home',
         ],
-
         // This is a menu item
-        'test'  => [
-            'text'  => 'Submenu',
-            'url'   => '#',
-            'title' => '',
+        'questions'  => [
+            'text'  => 'Frågor',
+            'url'   => $this->di->get('url')->create('questions/view'),
+            'title' => 'Frågor',
 
             // Here we add the submenu, with some menu items, as part of a existing menu item
             'submenu' => [
@@ -32,16 +31,11 @@ return [
                     // This is a menu item of the submenu
                     'item 0'  => [
                         'text'  => 'Ställ fråga',
-                        'url'   => $this->di->get('url')->create('ask'),
+                        'url'   => $this->di->get('url')->create('questions/add'),
                         'title' => 'Url as internal route within this frontcontroller',
                     ],
                 ],
             ],
-        ],
-        'login' => [
-            'text'  => 'Logga in',
-            'url'   => $this->di->get('url')->create('login'),
-            'title' => '',
         ],
     ],
 
