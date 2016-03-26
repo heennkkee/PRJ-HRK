@@ -109,7 +109,7 @@ $app->router->add('setup', function () use ($app) {
 });
 
 $app->router->add('test', function () use ($app) {
-    $res = $app->db->executeFetchAll('SELECT * FROM USER2QUESTIONVOTE');
+    $res = $app->db->executeFetchAll('SELECT * FROM USER2COMMENTVOTE');
     dump($res);
 });
 
