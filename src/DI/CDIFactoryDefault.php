@@ -32,6 +32,12 @@ class CDIFactoryDefault extends CDI
             return $controller;
         });
 
+        $this->set('UsersController', function () {
+            $controller = new \Anax\Users\CUsersController();
+            $controller->setDI($this);
+            return $controller;
+        });
+
         $this->set('ErrorController', function () {
             $controller = new \Anax\MVC\ErrorController();
             $controller->setDI($this);

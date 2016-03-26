@@ -40,10 +40,18 @@ h1 {
     min-height: 150px;
 }
 
+.singleQuestion {
+    margin-bottom: 40px;
+}
+
 .reply {
     margin: 5px;
     padding: 5px;
     border-top: 1px solid #e3e3e3;
+}
+
+.arrow-link {
+    display: block;
 }
 
 .allQuestions:hover {

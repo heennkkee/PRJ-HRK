@@ -40,6 +40,7 @@ if (isset($_SESSION['USER'])) {
        ],
        'submit' => [
            'type'      => 'submit',
+           'value'     => 'Logga in',
            'callback'  => function ($form) use ($app) {
                $res = $app->db->executeFetchAll('SELECT ACRONYM, NAME, PASSWORD FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
                if (password_verify($form->Value('password'), $res[0]->PASSWORD)) {
@@ -68,10 +69,15 @@ if (isset($_SESSION['USER'])) {
     }
 }
 
-$app->views->add('prj-hrk/user', ['content' => $form->getHTML(['use_fieldset' => false])], 'header');
+$app->views->add('prj-hrk/login', ['form' => $form->getHTML(['use_fieldset' => false])], 'header');
 
 if (!isset($_SESSION['USER'])) {
-    $app->views->add('error/403', [], 'main');
+    $registering = $app->request->getRouteParts();
+    if ($registering[0] === 'users' && $registering[1] === 'register') {
+        $app->router->handle();
+    } else {
+        $app->views->add('error/403', [], 'main');
+    }
     $app->theme->render();
     die();
 }
@@ -82,14 +88,34 @@ $app->router->add('questions', function () use ($app) {
 
 $app->router->add('setup', function () use ($app) {
     $app->db->dropTableIfExists('USER2COMMENTVOTE')->execute();
-    $app->db->dropTableIfExists('COMMENTS')->execute();
+    $app->db->dropTableIfExists('USER2QUESTIONVOTE')->execute();
+
 
     $app->db->execute('CREATE TABLE USER2COMMENTVOTE (
         ACRONYM VARCHAR(20),
         ID INTEGER,
         SCORE INTEGER,
+        CREATED DATETIME,
         UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
     )');
+
+    $app->db->execute('CREATE TABLE USER2QUESTIONVOTE (
+        ACRONYM VARCHAR(20),
+        ID INTEGER,
+        SCORE INTEGER,
+        CREATED DATETIME,
+        UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
+    )');
+});
+
+$app->router->add('test', function () use ($app) {
+    $res = $app->db->executeFetchAll('SELECT * FROM USER2QUESTIONVOTE');
+    dump($res);
+});
+
+$app->router->add('questionSetup', function () use ($app) {
+    $app->db->dropTableIfExists('QUESTIONS')->execute();
+    $app->db->dropTableIfExists('COMMENTS')->execute();
 
     $app->db->createTable('COMMENTS', [
         'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
@@ -99,17 +125,6 @@ $app->router->add('setup', function () use ($app) {
         'QUESTION_ID' => ['varchar(80)'],
         'COMMENT_ID' => ['varchar(80)']
     ])->execute();
-});
-
-$app->router->add('test', function () use ($app) {
-    $res = $app->db->executeFetchAll('SELECT * FROM USER2COMMENTVOTE');
-    dump($res);
-    $res = $app->db->executeFetchAll('SELECT TOTAL(SCORE) AS Score FROM USER2COMMENTVOTE', []);
-    dump($res);
-});
-
-$app->router->add('questionSetup', function () use ($app) {
-    $app->db->dropTableIfExists('QUESTIONS')->execute();
 
     $app->db->createTable('QUESTIONS', [
         'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
@@ -117,7 +132,6 @@ $app->router->add('questionSetup', function () use ($app) {
         'TEXT' => ['blob'],
         'ANSWERED' => ['integer', 'DEFAULT 0'],
         'CREATED' => ['datetime'],
-        'EDITED' => ['INTEGER'],
         'AUTHOR' => ['varchar(80)'],
     ])->execute();
 
@@ -140,7 +154,7 @@ $app->router->add('userSetup', function () use ($app) {
 
     $app->db->insert(
         'USERS',
-        ['ACRONYM', 'NAME', 'PASSWORD', 'REGISTERED', 'REP']
+        ['ACRONYM', 'NAME', 'PASSWORD', 'REGISTERED', 'DESCRIPTION']
     );
 
     $now = gmdate('Y-m-d H:i:s');
@@ -150,7 +164,7 @@ $app->router->add('userSetup', function () use ($app) {
         'Administrator',
         password_hash('admin', PASSWORD_DEFAULT),
         $now,
-        1337
+        'The admin of the all.'
     ]);
 
     $app->db->execute([
@@ -158,13 +172,13 @@ $app->router->add('userSetup', function () use ($app) {
         'Doe McDoe',
         password_hash('doe', PASSWORD_DEFAULT),
         $now,
-        0
+        'Welcome to the doe-family!'
     ]);
 });
 
 
 $app->router->add('', function () use ($app) {
-    $app->views->add('prj-hrk/question', [
+    $app->views->add('prj-hrk/content', [
         'content' => '<h2>Välkommen till indexsidan</h2>',
     ]);
 });

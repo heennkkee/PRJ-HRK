@@ -100,8 +100,9 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             default:
                 return;
         }
-        $sql = "INSERT INTO USER2COMMENTVOTE (ACRONYM, ID, SCORE) VALUES(?, ?, ?)";
-        $params = [$_SESSION['USER']['ACRONYM'], $id, $score];
+        $now = gmdate('Y-m-d H:i:s');
+        $sql = "INSERT INTO USER2COMMENTVOTE (ACRONYM, ID, SCORE, CREATED) VALUES(?, ?, ?, ?)";
+        $params = [$_SESSION['USER']['ACRONYM'], $id, $score, $now];
         $this->di->db->execute($sql, $params);
 
         $url = $this->di->url->create('questions/view/' . $returnID);
@@ -109,6 +110,31 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
         $this->di->response->redirect($url);
     }
 
+    public function votequestionAction($id, $reaction, $returnID = null)
+    {
+        if (is_null($id)) {
+            return;
+        }
+
+        switch ($reaction) {
+            case 'good':
+                $score = 1;
+                break;
+            case 'bad':
+                $score = -1;
+                break;
+            default:
+                return;
+        }
+        $now = gmdate('Y-m-d H:i:s');
+        $sql = "INSERT INTO USER2QUESTIONVOTE (ACRONYM, ID, SCORE, CREATED) VALUES(?, ?, ?, ?)";
+        $params = [$_SESSION['USER']['ACRONYM'], $id, $score, $now];
+        $this->di->db->execute($sql, $params);
+
+        $url = $this->di->url->create('questions/view/' . $returnID);
+
+        $this->di->response->redirect($url);
+    }
 /**
  * View a specific question
  *
@@ -131,11 +157,10 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                 $title = htmlspecialchars($subRes->TITLE);
                 $text = strip_tags($this->di->textFilter->doFilter($subRes->TEXT, 'markdown'));
                 $created = $subRes->CREATED;
-                $edited = $subRes->EDITED;
                 $author = htmlspecialchars($subRes->AUTHOR);
                 $id = $subRes->ID;
 
-                $this->di->views->add('prj-hrk/questions', ['title' => $title, 'text' => $text, 'created' => $created, 'edited' => $edited, 'author' => $author, 'id' => $id]);
+                $this->di->views->add('prj-hrk/questions', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $author, 'id' => $id]);
             }
         } else {
             $res = $res->getProperties();
@@ -143,11 +168,26 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             $title = htmlspecialchars($res['TITLE']);
             $text = $this->di->textFilter->doFilter(htmlspecialchars($res['TEXT']), 'markdown');
             $created = $res['CREATED'];
-            $edited = $res['EDITED'];
             $author = htmlspecialchars($res['AUTHOR']);
             $questionID = $res['ID'];
 
-            $this->di->views->add('prj-hrk/question', ['title' => $title, 'text' => $text, 'created' => $created, 'edited' => $edited, 'author' => $author]);
+            $score = $this->di->db->executeFetchAll('SELECT COALESCE(SUM(SCORE), 0) AS SCORE FROM USER2QUESTIONVOTE WHERE ID = ? GROUP BY ID', [$questionID]);
+
+            if (count($score) > 0) {
+                $score = $score[0]->SCORE;
+            } else {
+                $score = 0;
+            }
+
+            $voted = $this->di->db->executeFetchAll('SELECT COALESCE(SCORE, 0) AS SCORE FROM USER2QUESTIONVOTE WHERE ACRONYM = ? AND ID = ?', [$_SESSION['USER']['ACRONYM'], $questionID]);
+
+            if (count($voted) > 0) {
+                $voted = $voted[0]->SCORE;
+            } else {
+                $voted = 0;
+            }
+
+            $this->di->views->add('prj-hrk/question', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $author, 'score' => $score, 'voted' => $voted, 'returnID' => $questionID, 'id' => $questionID]);
 
             //Load eventual comments
             $res = $this->di->db->executeFetchAll('SELECT * FROM COMMENTS WHERE QUESTION_ID = ?', [$questionID]);
@@ -174,7 +214,10 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                     $voted = 0;
                 }
 
-                $this->di->views->add('prj-hrk/replies', ['text' => $text, 'created' => $created, 'author' => $author, 'score' => $score, 'id' => $commentID, 'returnID' => $questionID, 'voted' => $voted]);
+                $gravatar = $this->di->db->executeFetchAll('SELECT GRAVATAR FROM USERS, COMMENTS WHERE USERS.ACRONYM = COMMENTS.AUTHOR AND COMMENTS.ID = ?', [$commentID]);
+                $gravatar = gravatar($gravatar[0]->GRAVATAR, 60);
+
+                $this->di->views->add('prj-hrk/replies', ['text' => $text, 'created' => $created, 'author' => $author, 'score' => $score, 'id' => $commentID, 'returnID' => $questionID, 'voted' => $voted, 'gravatar' => $gravatar]);
             }
 
             $form = $this->di->form->create(['id' => 'reply'], [
