@@ -12,36 +12,32 @@
 </head>
 
 <body>
-<div id='wrapper'>
 
-<div id='header'>
-<?php if(isset($header)) echo $header?>
-<?php $this->views->render('header')?>
+<div id="headerWrap">
+    <div id='header'>
+        <?php if(isset($header)) echo $header?>
+        <?php $this->views->render('header')?>
+        <?php if ($this->views->hasContent('navbar')) : ?>
+            <div id='navbar'>
+                <?php $this->views->render('navbar')?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
+<div id="wrapper">
 
-<div id="user">
-    <?php if(isset($user)) echo $user?>
-    <?php $this->views->render('user')?>
-</div>
 
-<?php if ($this->views->hasContent('navbar')) : ?>
-<div id='navbar'>
-<?php $this->views->render('navbar')?>
-</div>
-<?php endif; ?>
+    <div id='main'>
+    <?php if(isset($main)) echo $main?>
+    <?php $this->views->render('main')?>
+    </div>
 
-<div id='main'>
-<?php if(isset($main)) echo $main?>
-<?php $this->views->render('main')?>
-</div>
-
-<div id='footer'>
-<?php if(isset($footer)) echo $footer?>
-<?php $this->views->render('footer')?>
-</div>
+    <div id='footer'>
+    <?php if(isset($footer)) echo $footer?>
+    <?php $this->views->render('footer')?>
+    </div>
 
 </div>
-
 <?php if(isset($jquery)):?><script src='<?=$this->url->asset($jquery)?>'></script><?php endif; ?>
 
 <?php if(isset($javascript_include)): foreach($javascript_include as $val): ?>

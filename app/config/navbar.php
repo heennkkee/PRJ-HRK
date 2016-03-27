@@ -20,22 +20,18 @@ return [
         // This is a menu item
         'questions'  => [
             'text'  => 'Frågor',
-            'url'   => $this->di->get('url')->create('questions/view'),
-            'title' => 'Frågor',
-
-            // Here we add the submenu, with some menu items, as part of a existing menu item
-            'submenu' => [
-
-                'items' => [
-
-                    // This is a menu item of the submenu
-                    'item 0'  => [
-                        'text'  => 'Ställ fråga',
-                        'url'   => $this->di->get('url')->create('questions/add'),
-                        'title' => 'Url as internal route within this frontcontroller',
-                    ],
-                ],
-            ],
+            'url'   => $this->di->get('url')->create('questions'),
+            'title' => 'Frågor'
+        ],
+        'users'  => [
+            'text'  => 'Användare',
+            'url'   => $this->di->get('url')->create('users'),
+            'title' => 'Användare',
+        ],
+        'tags' => [
+            'text'  => 'Taggar',
+            'url'   => $this->di->get('url')->create('tags'),
+            'title' => 'Taggar',
         ],
     ],
 
@@ -46,7 +42,11 @@ return [
      *
      */
     'callback' => function ($url) {
-        if ($url == $this->di->get('request')->getCurrentUrl(false)) {
+        $urlParts = explode('/', $url);
+        $menu = $urlParts[count($urlParts)-1];
+        $real = isset($_SERVER['PATH_INFO']) ? explode('/', $_SERVER['PATH_INFO'])[1] : 'webroot';
+
+        if ($menu === $real) {
             return true;
         }
     },

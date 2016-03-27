@@ -1,7 +1,7 @@
-<div class="login" style="border: 2px black solid; padding: 5px; display: inline-block; position: absolute; top: 0; right: 200px;">
+<div class="login">
     <?php
     if (isset($_SESSION['USER'])) {
-        echo '<span>Hej ' . $_SESSION['USER']['NAME'] . '</span>';
+        echo '<p>Du är redan inloggad som: ' . $_SESSION['USER']['NAME'] . '</p>';
     }
     echo $form;
     if (!isset($_SESSION['USER'])) {

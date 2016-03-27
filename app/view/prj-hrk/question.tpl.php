@@ -11,6 +11,15 @@
     <div style="margin-left: 60px;">
         <h1><?=$title?></h1>
         <p><?=$text?></p>
+        <span class="tags">
+            <?php
+            $test = array();
+            foreach ($tags as $tag) {
+                array_push($test, '<a href="' . $this->di->url->create('questions/tag/') . '/' . $tag->TAG_DESCR . '">' . $tag->TAG_DESCR . '</a>');
+            }
+            echo implode($test, ', ');
+            ?>
+        </span><br><br> 
         <span class="author"><?=$author?> <?=$created?></span><br>
     </div>
 </div>

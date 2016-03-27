@@ -3,77 +3,9 @@
 require __DIR__.'/config_with_app.php';
 $app->session();
 
-if (isset($_SESSION['USER'])) {
-
-    $form = $app->form->create(['id' => 'login'], [
-        'submit' => [
-            'type'      => 'submit',
-            'value'     => 'Logga ut',
-            'label'     => 'Välkommen ' . $_SESSION['USER']['NAME'],
-            'callback'  => function () {
-                unset($_SESSION['USER']);
-                return true;
-            }
-        ],
-    ]);
-
-    $status = $form->check();
-
-    if ($status === true) {
-        $url = $app->url->create('');
-        $app->response->redirect($url);
-    }
-} else {
-    $form = $app->form->create(['id' => 'login'], [
-       'acronym' => [
-           'type'        => 'text',
-           'autofocus'   => true,
-           'label'       => 'Inlogg',
-           'required'    => true,
-           'validation'  => ['not_empty'],
-       ],
-       'password' => [
-           'type'        => 'password',
-           'label'       => 'Lösenord',
-           'required'    => true,
-           'validation'  => ['not_empty'],
-       ],
-       'submit' => [
-           'type'      => 'submit',
-           'value'     => 'Logga in',
-           'callback'  => function ($form) use ($app) {
-               $res = $app->db->executeFetchAll('SELECT ACRONYM, NAME, PASSWORD FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
-               if (password_verify($form->Value('password'), $res[0]->PASSWORD)) {
-                   $_SESSION['USER']['ACRONYM'] = $res[0]->ACRONYM;
-                   $_SESSION['USER']['NAME'] = $res[0]->NAME;
-                   return true;
-               }
-               return false;
-           }
-       ],
-    ]);
-
-    // Check the status of the form
-    $status = $form->check();
-
-    if ($status === true) {
-
-        // What to do if the form was submitted?
-        $url = $app->url->create('');
-        $app->response->redirect($url);
-    } else if ($status === false) {
-        // What to do when form could not be processed?
-        $form->AddOutput('<p class="warning">Login failed!</p>');
-        $url = $app->request->getCurrentUrl();
-        $app->response->redirect($url);
-    }
-}
-
-$app->views->add('prj-hrk/login', ['form' => $form->getHTML(['use_fieldset' => false])], 'header');
-
 if (!isset($_SESSION['USER'])) {
     $registering = $app->request->getRouteParts();
-    if ($registering[0] === 'users' && $registering[1] === 'register') {
+    if ($registering[0] === 'users' && ($registering[1] === 'register' || $registering[1] === 'login')) {
         $app->router->handle();
     } else {
         $app->views->add('error/403', [], 'main');
@@ -83,13 +15,24 @@ if (!isset($_SESSION['USER'])) {
 }
 
 $app->router->add('questions', function () use ($app) {
+    $app->dispatcher->forward([
+        'controller' => 'questions',
+        'action'     => 'view'
+    ]);
+});
 
+$app->router->add('users', function () use ($app) {
+    $app->dispatcher->forward([
+        'controller'    => 'users',
+        'action'        => 'view'
+    ]);
 });
 
 $app->router->add('setup', function () use ($app) {
     $app->db->dropTableIfExists('USER2COMMENTVOTE')->execute();
     $app->db->dropTableIfExists('USER2QUESTIONVOTE')->execute();
-
+    $app->db->dropTableIfExists('TAGS')->execute();
+    $app->db->dropTableIfExists('TAGS2QUESTIONS')->execute();
 
     $app->db->execute('CREATE TABLE USER2COMMENTVOTE (
         ACRONYM VARCHAR(20),
@@ -106,10 +49,26 @@ $app->router->add('setup', function () use ($app) {
         CREATED DATETIME,
         UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
     )');
+
+    $app->db->execute('CREATE TABLE TAGS2QUESTIONS (
+        TAG_DESCR VARCHAR(80),
+        QUESTION_ID INTEGER,
+        UNIQUE(TAG_DESCR, QUESTION_ID) ON CONFLICT IGNORE
+    )');
+
+    $app->db->createTable('TAGS', [
+        'ID' =>['integer', 'primary key', 'not null', 'auto_increment'],
+        'DESCRIPTION' => ['varchar(80)', 'unique']
+    ])->execute();
+
+    $app->db->insert('TAGS', ['DESCRIPTION']);
+    $app->db->execute(['Tagg 1']);
+    $app->db->execute(['Tagg 2']);
+    $app->db->execute(['Tagg 3']);
 });
 
 $app->router->add('test', function () use ($app) {
-    $res = $app->db->executeFetchAll('SELECT * FROM USER2COMMENTVOTE');
+    $res = $app->db->executeFetchAll('SELECT * FROM TAGS2QUESTIONS');
     dump($res);
 });
 
@@ -135,6 +94,13 @@ $app->router->add('questionSetup', function () use ($app) {
         'AUTHOR' => ['varchar(80)'],
     ])->execute();
 
+});
+
+$app->router->add('tags', function () use ($app) {
+    $app->dispatcher->forward([
+        'controller' => 'questions',
+        'action'     => 'tag'
+    ]);
 });
 
 $app->router->add('userSetup', function () use ($app) {

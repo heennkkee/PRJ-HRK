@@ -21,38 +21,121 @@ class CUsersController implements \Anax\DI\IInjectionAware
         $this->users->setDI($this->di);
     }
 
-    public function viewAction($id)
+    public function loginAction()
     {
-        $res = $this->users->find($id);
-        if (!$res) {
-            echo 'No user found, oopsie!<br><a href="' . $this->di->url->create('') . '">Till startsidan</a>';
-            die();
+        if (isset($_SESSION['USER'])) {
+
+            $form = $this->di->form->create(['id' => 'login'], [
+                'submit' => [
+                    'type'      => 'submit',
+                    'value'     => 'Logga ut',
+                    'label'     => 'Välkommen ' . $_SESSION['USER']['NAME'],
+                    'callback'  => function () {
+                        unset($_SESSION['USER']);
+                        return true;
+                    }
+                ],
+            ]);
+
+            $status = $form->check();
+
+            if ($status === true) {
+                $url = $this->di->url->create('');
+                $this->di->response->redirect($url);
+            }
+        } else {
+            $form = $this->di->form->create(['id' => 'login'], [
+               'acronym' => [
+                   'type'        => 'text',
+                   'autofocus'   => true,
+                   'label'       => 'Inlogg',
+                   'required'    => true,
+                   'validation'  => ['not_empty'],
+               ],
+               'password' => [
+                   'type'        => 'password',
+                   'label'       => 'Lösenord',
+                   'required'    => true,
+                   'validation'  => ['not_empty'],
+               ],
+               'submit' => [
+                   'type'      => 'submit',
+                   'value'     => 'Logga in',
+                   'callback'  => function ($form) {
+                       $res = $this->di->db->executeFetchAll('SELECT ACRONYM, NAME, PASSWORD, ID FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
+                       if (password_verify($form->Value('password'), $res[0]->PASSWORD)) {
+                           $_SESSION['USER']['ACRONYM'] = $res[0]->ACRONYM;
+                           $_SESSION['USER']['NAME'] = $res[0]->NAME;
+                           $_SESSION['USER']['ID'] = $res[0]->ID;
+                           return true;
+                       }
+                       return false;
+                   }
+               ],
+            ]);
+
+            // Check the status of the form
+            $status = $form->check();
+
+            if ($status === true) {
+
+                // What to do if the form was submitted?
+                $url = $this->di->url->create('');
+                $this->di->response->redirect($url);
+            } else if ($status === false) {
+                // What to do when form could not be processed?
+                $form->AddOutput('<p class="warning">Login failed!</p>');
+                $url = $this->di->request->getCurrentUrl();
+                $this->di->response->redirect($url);
+            }
         }
-        $res = $res->getProperties();
 
-        $name = htmlspecialchars($res['NAME']);
-        $description = $this->di->textFilter->doFilter(htmlspecialchars($res['DESCRIPTION']), 'markdown');
-        $gravatar = gravatar($res['GRAVATAR'], 160);
+        $this->di->views->add('prj-hrk/login', ['form' => $form->getHTML(['use_fieldset' => false])], 'main');
+    }
 
-        $edit = ($_SESSION['USER']['ACRONYM'] == $res['ACRONYM']) ? true : false;
-        $id = $res['ID'];
+    public function viewAction($acronym = null)
+    {
+        if (is_null($acronym)) {
+            $res = $this->users->findAll();
+            foreach($res as $subRes) {
+                $subRes = $subRes->getProperties();
+                $rep = $this->users->getRep($subRes['ACRONYM']);
+                $this->di->views->add('prj-hrk/users', ['data' => $subRes, 'rep' => $rep]);
+            }
+        } else {
+            $res = $this->di->db->executeFetchAll('SELECT * FROM USERS WHERE ACRONYM = ?', [$acronym]);
+            if (!$res) {
+                echo 'No user found, oopsie!<br><a href="' . $this->di->url->create('') . '">Till startsidan</a>';
+                die();
+            }
+            $res = $res[0];
 
-        $this->di->views->add('prj-hrk/user', ['name' => $name, 'description' => $description, 'gravatar' => $gravatar, 'id' => $id, 'edit' => $edit]);
+            $name = htmlspecialchars($res->NAME);
+            $description = $this->di->textFilter->doFilter(htmlspecialchars($res->DESCRIPTION), 'markdown');
+            $gravatar = gravatar($res->GRAVATAR, 160);
 
-        $activity = $this->di->db->executeFetchAll('SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE FROM QUESTIONS WHERE AUTHOR = ?
-                                                    UNION ALL
-                                                    SELECT CASE WHEN COMMENT_ID IS NULL THEN "COMMENT_QUESTION" ELSE "COMMENT_COMMENT" END, COALESCE(COMMENT_ID, QUESTION_ID), COMMENTS.TEXT, COMMENTS.CREATED, "" FROM COMMENTS WHERE AUTHOR = ?
-                                                    UNION ALL
-                                                    SELECT "VOTED_Q", Q.ID, Q.TITLE, U2Q.CREATED, U2Q.SCORE FROM USER2QUESTIONVOTE U2Q, QUESTIONS Q WHERE U2Q.ACRONYM = ? AND U2Q.ID = Q.ID
-                                                    UNION ALL
-                                                    SELECT "VOTED_C", C.ID, C.TEXT, U2C.CREATED, U2C.SCORE FROM USER2COMMENTVOTE U2C, COMMENTS C WHERE U2C.ACRONYM = ? AND U2C.ID = C.ID',
-        [$res['ACRONYM'], $res['ACRONYM'], $res['ACRONYM'], $res['ACRONYM']]);
-        $activity = json_decode(json_encode($activity), true);
-        if(count($activity) > 0) {
-            sksort($activity, 'CREATED');
+            $edit = ($_SESSION['USER']['ACRONYM'] == $res->ACRONYM) ? true : false;
+            $id = $res->ID;
+
+            $rep = $this->users->getRep($res->ACRONYM);
+
+            $this->di->views->add('prj-hrk/user', ['name' => $name, 'description' => $description, 'gravatar' => $gravatar, 'id' => $id, 'edit' => $edit, 'rep' => $rep]);
+
+            $activity = $this->di->db->executeFetchAll('SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE FROM QUESTIONS WHERE AUTHOR = ?
+                UNION ALL
+                SELECT CASE WHEN COMMENT_ID IS NULL THEN "COMMENT_QUESTION" ELSE "COMMENT_COMMENT" END, COALESCE(COMMENT_ID, QUESTION_ID), COMMENTS.TEXT, COMMENTS.CREATED, "" FROM COMMENTS WHERE AUTHOR = ?
+                UNION ALL
+                SELECT "VOTED_Q", Q.ID, Q.TITLE, U2Q.CREATED, U2Q.SCORE FROM USER2QUESTIONVOTE U2Q, QUESTIONS Q WHERE U2Q.ACRONYM = ? AND U2Q.ID = Q.ID
+                UNION ALL
+                SELECT "VOTED_C", C.ID, C.TEXT, U2C.CREATED, U2C.SCORE FROM USER2COMMENTVOTE U2C, COMMENTS C WHERE U2C.ACRONYM = ? AND U2C.ID = C.ID',
+                [$res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM]);
+                $activity = json_decode(json_encode($activity), true);
+                if(count($activity) > 0) {
+                    sksort($activity, 'CREATED');
+                }
+
+                $this->di->views->add('prj-hrk/activities', ['activities' => $activity]);
         }
-
-        $this->di->views->add('prj-hrk/activities', ['activities' => $activity]);
 
     }
 
@@ -60,6 +143,7 @@ class CUsersController implements \Anax\DI\IInjectionAware
     {
         $form = $this->di->form->create(['id' => 'register'], [
            'acronym' => [
+               'autofocus'   => true,
                'type'        => 'text',
                'label'       => 'Inloggning',
                'validation'  => ['not_empty'],
