@@ -7,6 +7,9 @@ License
 
 This software is free software and carries a MIT license.
 
+Change .htacces
+
+install composer packages
 
 
 Use of external libraries
