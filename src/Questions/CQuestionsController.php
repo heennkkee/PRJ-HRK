@@ -56,28 +56,28 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
            'submit' => [
                'type'      => 'submit',
                'callback'  => function ($form) {
-                   $now = gmdate('Y-m-d H:i:s');
+                    $now = gmdate('Y-m-d H:i:s');
 
-                   $this->di->db->insert('QUESTIONS', ['TITLE', 'TEXT', 'CREATED', 'AUTHOR']);
-                   $sqlBool = $this->di->db->execute([$form->Value('title'), $form->Value('text'), $now, $form->Value('author')]);
+                    $this->di->db->insert('QUESTIONS', ['TITLE', 'TEXT', 'CREATED', 'AUTHOR']);
+                    $sqlBool = $this->di->db->execute([$form->Value('title'), $form->Value('text'), $now, $form->Value('author')]);
 
-                   $questionID = $this->di->db->lastInsertId();
-                   $tags = $form->Value('tags');
+                    $questionID = $this->di->db->lastInsertId();
+                    $tags = $form->Value('tags');
 
-                   $this->di->db->insert('TAGS2QUESTIONS', ['TAG_DESCR', 'QUESTION_ID']);
-                   foreach($tags as $tag) {
-                       $this->di->db->execute([$tag, $questionID]);
-                   }
-                   if ($sqlBool) {
-                       $form->saveInSession = false;
-                       $this->di->rss->insertRSS(['LINK' => $this->di->url->create('questions/view/' . $questionID), 'DESCRIPTION' => substr(strip_tags($this->di->textFilter->doFilter($form->Value('text'), 'markdown')), 0, 50), 'TITLE' => strip_tags($form->Value('title'))]);
-                       return [true, $questionID];
-                   } else {
-                       $form->saveInSession = true;
-                       return [false];
-                   }
+                    $this->di->db->insert('TAGS2QUESTIONS', ['TAG_DESCR', 'QUESTION_ID']);
+                foreach ($tags as $tag) {
+                    $this->di->db->execute([$tag, $questionID]);
+                }
+                if ($sqlBool) {
+                        $form->saveInSession = false;
+                        $this->di->rss->insertRSS(['LINK' => $this->di->url->create('questions/view/' . $questionID), 'DESCRIPTION' => substr(strip_tags($this->di->textFilter->doFilter($form->Value('text'), 'markdown')), 0, 50), 'TITLE' => strip_tags($form->Value('title'))]);
+                        return [true, $questionID];
+                } else {
+                        $form->saveInSession = true;
+                        return [false];
+                }
                }
-           ],
+            ],
         ]);
 
         // Check the status of the form
@@ -157,7 +157,8 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
         $this->di->response->redirect($url);
     }
 
-    public function tagAction($tag = null) {
+    public function tagAction($tag = null)
+    {
         if (is_null($tag)) {
             $res = $this->di->db->executeFetchAll('SELECT * FROM TAGS');
             $tags = array();
@@ -169,7 +170,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             $res = $this->di->db->executeFetchAll('SELECT * FROM QUESTIONS WHERE ID IN (SELECT QUESTION_ID FROM TAGS2QUESTIONS WHERE TAG_DESCR = ?) ORDER BY CREATED DESC', [(urldecode($tag))]);
             $this->di->views->add('prj-hrk/content', ['content' => '<h3>Visar frågor på taggen ' . strip_tags(urldecode($tag)) . '</h3>']);
             if (count($res) > 0) {
-                foreach($res as $subRes) {
+                foreach ($res as $subRes) {
                     $this->listPosts($subRes);
                 }
             } else {
@@ -190,12 +191,10 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             $res = $this->questions->find($id);
         }
 
-
-
         if (is_array($res)) {
             $this->di->views->add('prj-hrk/newPost');
             $this->di->views->add('prj-hrk/content', ['content' => '<h3>Visar alla frågor</h3>']);
-            foreach($res as $subRes) {
+            foreach ($res as $subRes) {
                 $this->listPosts($subRes);
             }
             if (!$res) {
@@ -228,7 +227,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                 $voted = 0;
             }
 
-            $tags = $this->di->db->executeFetchAll('SELECT TAG_DESCR FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?',[$questionID]);
+            $tags = $this->di->db->executeFetchAll('SELECT TAG_DESCR FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?', [$questionID]);
 
             $this->di->views->add('prj-hrk/question', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $questionAuthor, 'score' => $score, 'voted' => $voted, 'returnID' => $questionID, 'id' => $questionID, 'tags' => $tags]);
 
@@ -414,27 +413,28 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                 ],
              ]);
 
-             // Check the status of the form
-             $status = $form->check();
+            // Check the status of the form
+            $status = $form->check();
 
-             if ($status === true) {
-                 // What to do if the form was submitted?
-                 $url = $this->di->request->getCurrentUrl();
-                 $this->di->response->redirect($url);
-             } else if ($status === false) {
+            if ($status === true) {
+                // What to do if the form was submitted?
+                $url = $this->di->request->getCurrentUrl();
+                $this->di->response->redirect($url);
+            } else if ($status === false) {
 
-                 // What to do when form could not be processed?
-                 $form->AddOutput("<p>Något gick fel.</p>");
-                 $url = $this->di->request->getCurrentUrl();
-                 $this->di->response->redirect($url);
-             }
+                // What to do when form could not be processed?
+                $form->AddOutput("<p>Något gick fel.</p>");
+                $url = $this->di->request->getCurrentUrl();
+                $this->di->response->redirect($url);
+            }
 
-             $this->di->views->add('prj-hrk/reply', ['form' => $form->getHTML(['use_fieldset' => false])]);
+            $this->di->views->add('prj-hrk/reply', ['form' => $form->getHTML(['use_fieldset' => false])]);
 
         }
     }
 
-    private function listPosts($subRes) {
+    private function listPosts($subRes)
+    {
         $title = htmlspecialchars($subRes->TITLE);
         $text = strip_tags($this->di->textFilter->doFilter($subRes->TEXT, 'markdown'));
         $created = $subRes->CREATED;
@@ -443,7 +443,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
 
         $replies = $this->di->db->executeFetchAll('SELECT COUNT(*) AS REPLIES FROM COMMENTS WHERE QUESTION_ID = ?', [$id]);
         $score = $this->di->db->executeFetchAll('SELECT COALESCE(SUM(SCORE), 0) AS SCORE FROM USER2QUESTIONVOTE WHERE ID = ? GROUP BY ID', [$id]);
-        $tags = $this->di->db->executeFetchAll('SELECT GROUP_CONCAT(TAG_DESCR) AS TAGS FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?',[$id]);
+        $tags = $this->di->db->executeFetchAll('SELECT GROUP_CONCAT(TAG_DESCR) AS TAGS FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?', [$id]);
 
         $this->di->views->add('prj-hrk/questions', ['title' => $title, 'replies' => $replies, 'text' => $text, 'created' => $created, 'author' => $author, 'id' => $id, 'score' => $score, 'tags' => $tags]);
     }

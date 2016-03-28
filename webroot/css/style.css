@@ -32,6 +32,40 @@ h1 {
     margin-left: 70px;
 }
 
+.left-side, .right-side {
+    width: 47%;
+    padding-top: 10px;
+}
+
+.tag-table {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.frontpage-title {
+    font-size: 16pt;
+    font-weight: bold;
+    border-bottom: 1px solid #B6B6B6;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.top-member {
+    text-align: center;
+    border: 2px solid #727272;
+    border-radius: 5px;
+    display: inline-block;
+    padding: 7px;
+}
+
+.left-side {
+    float: left;
+}
+
+.right-side {
+    float: right;
+}
+
 .comment-comment {
     margin-left: 70px;
     border-top: 1px solid #B6B6B6;

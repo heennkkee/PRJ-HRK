@@ -62,14 +62,14 @@ class CUsersController implements \Anax\DI\IInjectionAware
                    'type'      => 'submit',
                    'value'     => 'Logga in',
                    'callback'  => function ($form) {
-                       $res = $this->di->db->executeFetchAll('SELECT ACRONYM, NAME, PASSWORD, ID FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
-                       if (password_verify($form->Value('password'), $res[0]->PASSWORD)) {
-                           $_SESSION['USER']['ACRONYM'] = $res[0]->ACRONYM;
-                           $_SESSION['USER']['NAME'] = $res[0]->NAME;
-                           $_SESSION['USER']['ID'] = $res[0]->ID;
-                           return true;
-                       }
-                       return false;
+                    $res = $this->di->db->executeFetchAll('SELECT ACRONYM, NAME, PASSWORD, ID FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
+                    if (password_verify($form->Value('password'), $res[0]->PASSWORD)) {
+                        $_SESSION['USER']['ACRONYM'] = $res[0]->ACRONYM;
+                        $_SESSION['USER']['NAME'] = $res[0]->NAME;
+                        $_SESSION['USER']['ID'] = $res[0]->ID;
+                        return true;
+                    }
+                        return false;
                    }
                ],
             ]);
@@ -93,11 +93,16 @@ class CUsersController implements \Anax\DI\IInjectionAware
         $this->di->views->add('prj-hrk/login', ['form' => $form->getHTML(['use_fieldset' => false])], 'main');
     }
 
+    public function repAction($acronym)
+    {
+        return $this->users->getRep($acronym);
+    }
+
     public function viewAction($acronym = null)
     {
         if (is_null($acronym)) {
             $res = $this->users->findAll();
-            foreach($res as $subRes) {
+            foreach ($res as $subRes) {
                 $subRes = $subRes->getProperties();
                 $rep = $this->users->getRep($subRes['ACRONYM']);
                 $this->di->views->add('prj-hrk/users', ['data' => $subRes, 'rep' => $rep]);
@@ -121,7 +126,8 @@ class CUsersController implements \Anax\DI\IInjectionAware
 
             $this->di->views->add('prj-hrk/user', ['name' => $name, 'description' => $description, 'gravatar' => $gravatar, 'id' => $id, 'edit' => $edit, 'rep' => $rep]);
 
-            $activity = $this->di->db->executeFetchAll('SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE, "" AS TEXT2 FROM QUESTIONS WHERE AUTHOR = ?
+            $activity = $this->di->db->executeFetchAll(
+                'SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE, "" AS TEXT2 FROM QUESTIONS WHERE AUTHOR = ?
                 UNION ALL
                 SELECT "COMMENT_COMMENT", Q.ID, CC.TEXT, CC.CREATED, C.ID, Q.TITLE FROM COM_COMMENTS CC JOIN COMMENTS C ON CC.COMMENT_ID = C.ID JOIN QUESTIONS Q ON C.QUESTION_ID = Q.ID WHERE CC.AUTHOR = ?
                 UNION ALL
@@ -130,11 +136,14 @@ class CUsersController implements \Anax\DI\IInjectionAware
                 SELECT "VOTED_Q", Q.ID, Q.TITLE, U2Q.CREATED, U2Q.SCORE, "" FROM USER2QUESTIONVOTE U2Q, QUESTIONS Q WHERE U2Q.ACRONYM = ? AND U2Q.ID = Q.ID
                 UNION ALL
                 SELECT "VOTED_C", C.ID, C.TEXT, U2C.CREATED, U2C.SCORE, "" FROM USER2COMMENTVOTE U2C, COMMENTS C WHERE U2C.ACRONYM = ? AND U2C.ID = C.ID',
-                [$res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM]);
+                [$res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM]
+            );
+
                 $activity = json_decode(json_encode($activity), true);
-                if(count($activity) > 0) {
+
+            if (count($activity) > 0) {
                     sksort($activity, 'CREATED');
-                }
+            }
 
                 $this->di->views->add('prj-hrk/activities', ['activities' => $activity]);
         }
@@ -258,20 +267,21 @@ class CUsersController implements \Anax\DI\IInjectionAware
            'submit' => [
                'type'      => 'submit',
                'callback'  => function ($form) {
-                   $confirm = $this->di->db->executeFetchAll('SELECT PASSWORD FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
-                   $form->saveInSession = false;
-                   if (password_verify($form->Value('password'), $confirm[0]->PASSWORD)) {
+                    $confirm = $this->di->db->executeFetchAll('SELECT PASSWORD FROM USERS WHERE ACRONYM = ?', [$form->Value('acronym')]);
+                    $form->saveInSession = false;
+                if (password_verify($form->Value('password'), $confirm[0]->PASSWORD)) {
 
-                       $name = $form->Value('name');
-                       $description = $form->Value('description');
-                       $gravatar = $form->Value('gravatar');
-                       $password = empty($form->Value('newPassword')) ? $form->Value('password') : $form->Value('newPassword');
-                       $password = password_hash($password, PASSWORD_DEFAULT);
-                       $acronym = $form->Value('acronym');
-                       $this->db->execute('UPDATE USERS SET NAME = ?, DESCRIPTION = ?, GRAVATAR = ?, PASSWORD = ? WHERE ACRONYM = ?', [$name, $description, $gravatar, $password, $acronym]);
-                       return true;
-                   }
-                   return false;
+                        $name = $form->Value('name');
+                        $description = $form->Value('description');
+                        $gravatar = $form->Value('gravatar');
+                        $password = empty($form->Value('newPassword')) ? $form->Value('password') : $form->Value('newPassword');
+                        $password = password_hash($password, PASSWORD_DEFAULT);
+                        $acronym = $form->Value('acronym');
+                        $this->db->execute('UPDATE USERS SET NAME = ?, DESCRIPTION = ?, GRAVATAR = ?, PASSWORD = ? WHERE ACRONYM = ?', [$name, $description, $gravatar, $password, $acronym]);
+                        return true;
+                }
+
+                    return false;
                }
            ],
         ]);

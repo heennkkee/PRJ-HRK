@@ -160,8 +160,25 @@ $app->router->add('userSetup', function () use ($app) {
 
 
 $app->router->add('', function () use ($app) {
-    $app->views->add('prj-hrk/content', [
-        'content' => '<h2>Välkommen till indexsidan</h2>',
+    $posts = $app->db->executeFetchAll('SELECT * FROM QUESTIONS ORDER BY CREATED DESC LIMIT 3');
+    $tags = $app->db->executeFetchAll('SELECT T.DESCRIPTION, COUNT(T2Q.QUESTION_ID) AS COUNT FROM TAGS T LEFT JOIN TAGS2QUESTIONS T2Q ON T.DESCRIPTION = T2Q.TAG_DESCR GROUP BY T.DESCRIPTION');
+    $users = $app->db->executeFetchAll('SELECT ACRONYM FROM USERS');
+    $temp = ['', 0];
+    foreach ($users as $user) {
+        $rep = $app->dispatcher->forward([
+            'controller' => 'Users',
+            'action' => 'rep',
+            'params' => [$user->ACRONYM]
+        ]);
+        if ($rep >= $temp[1]) {
+            $temp = [$user->ACRONYM, $rep];
+        }
+    }
+    $topUser = $app->db->executeFetchAll('SELECT * FROM USERS WHERE ACRONYM = ?', [$temp[0]]);
+    $app->views->add('prj-hrk/frontpage', [
+        'posts' => $posts,
+        'tags'  => $tags,
+        'topUser' => $topUser
     ]);
 });
 
@@ -170,7 +187,6 @@ $app->router->add('about', function () use ($app) {
 });
 
 $app->router->add('rss', function () use ($app) {
-    //$app->rss->clearRSS();
     $app->rss->getRSS();
     die();
 });

@@ -6,8 +6,8 @@ ErrorDocument 404 "This is a Anax 404. Document is not here."
 <IfModule mod_rewrite.c>
   RewriteEngine on
 
-  #RewriteBase /~hear15/dbwebb-kurser/phpmvc/me/kmom10/PRJ-HRK/webroot
-  RewriteBase /phpmvc/kmom10/PRJ-HRK/webroot
+  RewriteBase /~hear15/dbwebb-kurser/phpmvc/me/kmom10/PRJ-HRK/webroot
+  #RewriteBase /phpmvc/kmom10/PRJ-HRK/webroot
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
