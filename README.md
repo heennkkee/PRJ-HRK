@@ -7,9 +7,17 @@ License
 
 This software is free software and carries a MIT license.
 
-Change .htacces
+##Steps to install
 
-install composer packages
+###Install composer packages
+
+###Update the .htaccess file in /webroot.
+
+###Eventuellay go to webroot/setup and webroot/userSetup in your browser to reset the database.
+
+###Go!
+
+One problem I experienced during deployment was the read/write permissions, connected to the usage of a sqlite database.
 
 
 Use of external libraries
