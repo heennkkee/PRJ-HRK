@@ -23,15 +23,20 @@ return [
             'url'   => $this->di->get('url')->create('questions'),
             'title' => 'Frågor'
         ],
+        'tags' => [
+            'text'  => 'Taggar',
+            'url'   => $this->di->get('url')->create('tags'),
+            'title' => 'Taggar',
+        ],
         'users'  => [
             'text'  => 'Användare',
             'url'   => $this->di->get('url')->create('users'),
             'title' => 'Användare',
         ],
-        'tags' => [
-            'text'  => 'Taggar',
-            'url'   => $this->di->get('url')->create('tags'),
-            'title' => 'Taggar',
+        'about' => [
+            'text' => 'Om',
+            'url' => $this->di->get('url')->create('about'),
+            'title' => 'Om',
         ],
     ],
 

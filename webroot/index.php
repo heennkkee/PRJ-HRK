@@ -5,7 +5,7 @@ $app->session();
 
 if (!isset($_SESSION['USER'])) {
     $registering = $app->request->getRouteParts();
-    if ($registering[0] === 'users' && ($registering[1] === 'register' || $registering[1] === 'login')) {
+    if ($registering[0] === 'users' && (isset($registering[1]) ? (($registering[1] === 'register') ? true : (($registering[1] === 'login') ? true : false)) : false)) {
         $app->router->handle();
     } else {
         $app->views->add('error/403', [], 'main');
@@ -33,14 +33,55 @@ $app->router->add('setup', function () use ($app) {
     $app->db->dropTableIfExists('USER2QUESTIONVOTE')->execute();
     $app->db->dropTableIfExists('TAGS')->execute();
     $app->db->dropTableIfExists('TAGS2QUESTIONS')->execute();
+    $app->db->execute('DROP VIEW IF EXISTS C_VIEW');
+    $app->db->dropTableIfExists('QUESTIONS')->execute();
+    $app->db->dropTableIfExists('COMMENTS')->execute();
+    $app->db->dropTableIfExists('COM_COMMENTS')->execute();
+
+    $app->db->createTable('COMMENTS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'TEXT' => ['blob'],
+        'CORRECT' => ['integer', 'DEFAULT 0'],
+        'CREATED' => ['datetime'],
+        'AUTHOR' => ['varchar(80)'],
+        'QUESTION_ID' => ['varchar(80)']
+    ])->execute();
+
+    $app->db->createTable('COM_COMMENTS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'TEXT' => ['blob'],
+        'CREATED' => ['datetime'],
+        'AUTHOR' => ['varchar(80)'],
+        'COMMENT_ID' => ['varchar(80)']
+    ])->execute();
+
+    $app->db->createTable('QUESTIONS', [
+        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
+        'TITLE' => ['varchar(80)', 'not null'],
+        'TEXT' => ['blob'],
+        'CREATED' => ['datetime'],
+        'AUTHOR' => ['varchar(80)'],
+    ])->execute();
 
     $app->db->execute('CREATE TABLE USER2COMMENTVOTE (
-        ACRONYM VARCHAR(20),
-        ID INTEGER,
-        SCORE INTEGER,
-        CREATED DATETIME,
-        UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
+    ACRONYM VARCHAR(20),
+    ID INTEGER,
+    SCORE INTEGER,
+    CREATED DATETIME,
+    UNIQUE(ACRONYM, ID) ON CONFLICT REPLACE
     )');
+
+    $app->db->execute('CREATE VIEW C_VIEW AS
+    SELECT C.ID,
+    C.TEXT,
+    C.CORRECT,
+    C.CREATED,
+    C.AUTHOR,
+    C.QUESTION_ID,
+    COALESCE(SUM(U2C.SCORE), 0) AS "SCORE"
+    FROM COMMENTS C LEFT JOIN USER2COMMENTVOTE U2C ON C.ID = U2C.ID
+    GROUP BY C.ID, C.TEXT, C.CORRECT, C.CREATED, C.AUTHOR, C.QUESTION_ID');
+
 
     $app->db->execute('CREATE TABLE USER2QUESTIONVOTE (
         ACRONYM VARCHAR(20),
@@ -65,35 +106,6 @@ $app->router->add('setup', function () use ($app) {
     $app->db->execute(['Tagg 1']);
     $app->db->execute(['Tagg 2']);
     $app->db->execute(['Tagg 3']);
-});
-
-$app->router->add('test', function () use ($app) {
-    $res = $app->db->executeFetchAll('SELECT * FROM TAGS2QUESTIONS');
-    dump($res);
-});
-
-$app->router->add('questionSetup', function () use ($app) {
-    $app->db->dropTableIfExists('QUESTIONS')->execute();
-    $app->db->dropTableIfExists('COMMENTS')->execute();
-
-    $app->db->createTable('COMMENTS', [
-        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
-        'TEXT' => ['blob'],
-        'CREATED' => ['datetime'],
-        'AUTHOR' => ['varchar(80)'],
-        'QUESTION_ID' => ['varchar(80)'],
-        'COMMENT_ID' => ['varchar(80)']
-    ])->execute();
-
-    $app->db->createTable('QUESTIONS', [
-        'ID' => ['integer', 'primary key', 'not null', 'auto_increment'],
-        'TITLE' => ['varchar(80)', 'not null'],
-        'TEXT' => ['blob'],
-        'ANSWERED' => ['integer', 'DEFAULT 0'],
-        'CREATED' => ['datetime'],
-        'AUTHOR' => ['varchar(80)'],
-    ])->execute();
-
 });
 
 $app->router->add('tags', function () use ($app) {
@@ -146,6 +158,12 @@ $app->router->add('userSetup', function () use ($app) {
 $app->router->add('', function () use ($app) {
     $app->views->add('prj-hrk/content', [
         'content' => '<h2>Välkommen till indexsidan</h2>',
+    ]);
+});
+
+$app->router->add('about', function () use ($app) {
+    $app->views->add('prj-hrk/content', [
+        'content' => '<h2>About</h2>',
     ]);
 });
 

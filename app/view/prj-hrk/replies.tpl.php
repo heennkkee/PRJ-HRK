@@ -1,5 +1,10 @@
 <div class="reply">
-    <div style="float: left; height: 62px; width: 120px;">
+    <?php
+    if ($correct > 0) {
+        echo '<p class="correct-reply">Markerat som rätt svar.</p>';
+    }
+    ?>
+    <div id="<?=$id?>" style="float: left; height: 62px; width: 120px;">
         <div style="float: left; width: 50px; text-align: center;">
             <a class="no-dec arrow-link" href="<?=$this->di->url->create('questions/votecomment/' . $id . '/good' . '/' . $returnID)?>">
                 <svg height="25" width="50"><polygon class="arrow-up<?=(($voted == 1) ? '-active' : '')?>" points="0,25 25,0 50,25"></svg>

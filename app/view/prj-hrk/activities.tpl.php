@@ -5,7 +5,7 @@ if (count($activities) > 0) {
         extract($activity);
         switch ($TYPE) {
             case 'COMMENT_QUESTION':
-                echo '<li><small>' . $CREATED . '</small>: Kommenterade en fråga med <b>' . strip_tags($this->di->textFilter->doFilter($TEXT, 'markdown')) . '</b></li>';
+                echo '<li><small>' . $CREATED . '</small>: Kommenterade <a href="' . $this->di->url->create('questions/view' . '/' . $ID . '#' . $SCORE) . '">' . $TEXT2 . '</a> med <b>' . strip_tags($this->di->textFilter->doFilter($TEXT, 'markdown')) . '</b></li>';
                 break;
             case 'COMMENT_COMMENT':
                 echo '<li><small>' . $CREATED . '</small>: Svarade på en kommentar med <b>' . strip_tags($this->di->textFilter->doFilter($TEXT, 'markdown')) . '</b></li>';

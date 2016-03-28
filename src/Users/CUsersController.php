@@ -121,14 +121,16 @@ class CUsersController implements \Anax\DI\IInjectionAware
 
             $this->di->views->add('prj-hrk/user', ['name' => $name, 'description' => $description, 'gravatar' => $gravatar, 'id' => $id, 'edit' => $edit, 'rep' => $rep]);
 
-            $activity = $this->di->db->executeFetchAll('SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE FROM QUESTIONS WHERE AUTHOR = ?
+            $activity = $this->di->db->executeFetchAll('SELECT "QUESTION" AS "TYPE", ID, TITLE AS "TEXT", CREATED, "" AS SCORE, "" AS TEXT2 FROM QUESTIONS WHERE AUTHOR = ?
                 UNION ALL
-                SELECT CASE WHEN COMMENT_ID IS NULL THEN "COMMENT_QUESTION" ELSE "COMMENT_COMMENT" END, COALESCE(COMMENT_ID, QUESTION_ID), COMMENTS.TEXT, COMMENTS.CREATED, "" FROM COMMENTS WHERE AUTHOR = ?
+                SELECT "COMMENT_COMMENT", Q.ID, CC.TEXT, CC.CREATED, C.ID, Q.TITLE FROM COM_COMMENTS CC JOIN COMMENTS C ON CC.COMMENT_ID = C.ID JOIN QUESTIONS Q ON C.QUESTION_ID = Q.ID WHERE CC.AUTHOR = ?
                 UNION ALL
-                SELECT "VOTED_Q", Q.ID, Q.TITLE, U2Q.CREATED, U2Q.SCORE FROM USER2QUESTIONVOTE U2Q, QUESTIONS Q WHERE U2Q.ACRONYM = ? AND U2Q.ID = Q.ID
+                SELECT "COMMENT_QUESTION", QUESTION_ID, COMMENTS.TEXT, COMMENTS.CREATED, COMMENTS.ID, QUESTIONS.TITLE FROM COMMENTS, QUESTIONS WHERE COMMENTS.QUESTION_ID = QUESTIONS.ID AND COMMENTS.AUTHOR = ?
                 UNION ALL
-                SELECT "VOTED_C", C.ID, C.TEXT, U2C.CREATED, U2C.SCORE FROM USER2COMMENTVOTE U2C, COMMENTS C WHERE U2C.ACRONYM = ? AND U2C.ID = C.ID',
-                [$res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM]);
+                SELECT "VOTED_Q", Q.ID, Q.TITLE, U2Q.CREATED, U2Q.SCORE, "" FROM USER2QUESTIONVOTE U2Q, QUESTIONS Q WHERE U2Q.ACRONYM = ? AND U2Q.ID = Q.ID
+                UNION ALL
+                SELECT "VOTED_C", C.ID, C.TEXT, U2C.CREATED, U2C.SCORE, "" FROM USER2COMMENTVOTE U2C, COMMENTS C WHERE U2C.ACRONYM = ? AND U2C.ID = C.ID',
+                [$res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM, $res->ACRONYM]);
                 $activity = json_decode(json_encode($activity), true);
                 if(count($activity) > 0) {
                     sksort($activity, 'CREATED');

@@ -181,7 +181,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
  *
  * @return void
  */
-    public function viewAction($id = null)
+    public function viewAction($id = null, $commentSort = null)
     {
         if (is_null($id)) {
             $res = $this->di->db->executeFetchAll('SELECT * FROM QUESTIONS ORDER BY CREATED DESC');
@@ -190,6 +190,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
         }
 
         if (!$res) {
+            $this->di->views->add('prj-hrk/content', ['content' => '<h3>Inga frågor att visa...</h3>']);
             return;
         }
 
@@ -200,11 +201,10 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             }
         } else {
             $res = $res->getProperties();
-
             $title = htmlspecialchars($res['TITLE']);
             $text = $this->di->textFilter->doFilter(htmlspecialchars($res['TEXT']), 'markdown');
             $created = $res['CREATED'];
-            $author = htmlspecialchars($res['AUTHOR']);
+            $questionAuthor = htmlspecialchars($res['AUTHOR']);
             $questionID = $res['ID'];
 
             $score = $this->di->db->executeFetchAll('SELECT COALESCE(SUM(SCORE), 0) AS SCORE FROM USER2QUESTIONVOTE WHERE ID = ? GROUP BY ID', [$questionID]);
@@ -225,16 +225,32 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
 
             $tags = $this->di->db->executeFetchAll('SELECT TAG_DESCR FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?',[$questionID]);
 
-            $this->di->views->add('prj-hrk/question', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $author, 'score' => $score, 'voted' => $voted, 'returnID' => $questionID, 'id' => $questionID, 'tags' => $tags]);
+            $this->di->views->add('prj-hrk/question', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $questionAuthor, 'score' => $score, 'voted' => $voted, 'returnID' => $questionID, 'id' => $questionID, 'tags' => $tags]);
+
+            //AVailable sorting parameters, date and score.
+            $availableSorts = ['date', 'score'];
+            if (in_array($commentSort, $availableSorts)) {
+                switch ($commentSort) {
+                    case 'date':
+                        $sortVariable = 'ORDER BY CREATED ASC';
+                        break;
+                    case 'score':
+                        $sortVariable = 'ORDER BY SCORE DESC';
+                        break;
+                }
+            } else {
+                $sortVariable = 'ORDER BY CORRECT DESC, CREATED ASC';
+            }
 
             //Load eventual comments
-            $res = $this->di->db->executeFetchAll('SELECT * FROM COMMENTS WHERE QUESTION_ID = ?', [$questionID]);
+            $res = $this->di->db->executeFetchAll('SELECT * FROM C_VIEW WHERE QUESTION_ID = ? ' . $sortVariable, [$questionID]);
 
             foreach ($res as $comment) {
                 $commentID = $comment->ID;
                 $text = $this->di->textFilter->doFilter(htmlspecialchars($comment->TEXT), 'markdown');
                 $created = $comment->CREATED;
                 $author = htmlspecialchars($comment->AUTHOR);
+                $correct = $comment->CORRECT;
 
                 $score = $this->di->db->executeFetchAll('SELECT COALESCE(SUM(SCORE), 0) AS SCORE FROM USER2COMMENTVOTE WHERE ID = ? GROUP BY ID', [$commentID]);
 
@@ -255,7 +271,115 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                 $gravatar = $this->di->db->executeFetchAll('SELECT GRAVATAR FROM USERS, COMMENTS WHERE USERS.ACRONYM = COMMENTS.AUTHOR AND COMMENTS.ID = ?', [$commentID]);
                 $gravatar = gravatar($gravatar[0]->GRAVATAR, 60);
 
-                $this->di->views->add('prj-hrk/replies', ['text' => $text, 'created' => $created, 'author' => $author, 'score' => $score, 'id' => $commentID, 'returnID' => $questionID, 'voted' => $voted, 'gravatar' => $gravatar]);
+                $commentForm = $this->di->form->create(['id' => 'comment_' . $commentID], [
+                    'text' => [
+                        'type'        => 'textarea',
+                        'label'       => 'Skriv en kommentar:',
+                        'validation'  => ['not_empty'],
+                    ],
+                    'author' => [
+                        'type'        => 'hidden',
+                        'value'       => $_SESSION['USER']['ACRONYM'],
+                    ],
+                    'commentID' => [
+                        'type'  => 'hidden',
+                        'value' => $commentID
+                    ],
+                    'submit' => [
+                        'type'      => 'submit',
+                        'callback'  => function ($commentForm) {
+                            $now = gmdate('Y-m-d H:i:s');
+                            $this->di->db->insert('COM_COMMENTS', ['TEXT', 'CREATED', 'AUTHOR', 'COMMENT_ID']);
+                            $sqlBool = $this->di->db->execute([$commentForm->Value('text'), $now, $commentForm->Value('author'), $commentForm->Value('commentID')]);
+                            if ($sqlBool) {
+                                $commentForm->saveInSession = false;
+                                return true;
+                            } else {
+                                $commentForm->saveInSession = true;
+                                return false;
+                            }
+                        }
+                    ],
+                ]);
+
+
+                $status = $commentForm->check();
+
+                if ($status === true) {
+                    // What to do if the form was submitted?
+                    $url = $this->di->request->getCurrentUrl();
+                    $this->di->response->redirect($url);
+                } else if ($status === false) {
+                    // What to do when form could not be processed?
+                    $form->AddOutput("<p>Något gick fel.</p>");
+                    $url = $this->di->request->getCurrentUrl();
+                    $this->di->response->redirect($url);
+                }
+
+                $commentHTML = $commentForm->getHTML(['use_fieldset' => false]);
+
+                $canAccept = ($questionAuthor === $_SESSION['USER']['ACRONYM']) ? true : false;
+
+                if ($canAccept) {
+                    $buttonText = ($correct > 0) ? 'Avmarkera' : 'Markera som rätt';
+
+                    $acceptForm = $this->di->form->create(['id' => 'acceptForm_' . $commentID], [
+                        'questionID' => [
+                            'type'        => 'hidden',
+                            'value'       => $questionID,
+                        ],
+                        'commentID' => [
+                            'type'  => 'hidden',
+                            'value' => $commentID
+                        ],
+                        'submit' => [
+                            'type'      => 'submit',
+                            'value'     => $buttonText,
+                            'callback'  => function ($acceptForm) {
+                                $currAccept = $this->di->db->executeFetchAll('SELECT ID FROM COMMENTS WHERE CORRECT = 1 AND QUESTION_ID = ?', [$acceptForm->Value('questionID')]);
+                                if (isset($currAccept[0])) {
+                                    $currAccept = (isset($currAccept[0]->ID)) ? $currAccept[0]->ID : null;
+                                } else {
+                                    $currAccept = null;
+                                }
+                                $this->di->db->execute('UPDATE COMMENTS SET CORRECT = 0 WHERE QUESTION_ID = ?', [$acceptForm->Value('questionID')]);
+                                if ($currAccept == $acceptForm->Value('commentID')) {
+
+                                } else {
+                                    $this->di->db->execute('UPDATE COMMENTS SET CORRECT = 1 WHERE ID = ?', [$acceptForm->Value('commentID')]);
+                                }
+                                $acceptForm->saveInSession = false;
+                                return true;
+                            }
+                        ],
+                    ]);
+
+
+                    $status = $acceptForm->check();
+
+                    if ($status === true) {
+                        // What to do if the form was submitted?
+                        $url = $this->di->request->getCurrentUrl();
+                        $this->di->response->redirect($url);
+                    } else if ($status === false) {
+                        // What to do when form could not be processed?
+                        $acceptForm->AddOutput("<p>Något gick fel.</p>");
+                        $url = $this->di->request->getCurrentUrl();
+                        $this->di->response->redirect($url);
+                    }
+                    $acceptHTML = $acceptForm->getHTML(['use_fieldset' => false]);
+                }
+
+                $commentComments = $this->di->db->executeFetchAll('SELECT * FROM COM_COMMENTS WHERE COMMENT_ID = ? ORDER BY CREATED', [$commentID]);
+
+                $this->di->views->add('prj-hrk/replies', ['text' => $text, 'correct' => $correct, 'created' => $created, 'author' => $author, 'score' => $score, 'id' => $commentID, 'returnID' => $questionID, 'voted' => $voted, 'gravatar' => $gravatar]);
+                if ($canAccept) {
+                    $this->di->views->add('prj-hrk/markAsReplied', ['form' => $acceptHTML]);
+                }
+                $this->di->views->add('prj-hrk/comments', ['data' => $commentComments]);
+                $this->di->views->add('prj-hrk/commentsComment', ['form' => $commentHTML]);
+
+
             }
 
             $form = $this->di->form->create(['id' => 'reply'], [
@@ -312,9 +436,10 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
         $author = htmlspecialchars($subRes->AUTHOR);
         $id = $subRes->ID;
 
-        $score = $this->di->db->executeFetchAll('SELECT SUM(SCORE) AS SCORE FROM USER2QUESTIONVOTE WHERE ID = ?', [$id])[0]->SCORE;
+        $replies = $this->di->db->executeFetchAll('SELECT COUNT(*) AS REPLIES FROM COMMENTS WHERE QUESTION_ID = ?', [$id]);
+        $score = $this->di->db->executeFetchAll('SELECT COALESCE(SUM(SCORE), 0) AS SCORE FROM USER2QUESTIONVOTE WHERE ID = ? GROUP BY ID', [$id]);
         $tags = $this->di->db->executeFetchAll('SELECT GROUP_CONCAT(TAG_DESCR) AS TAGS FROM TAGS2QUESTIONS WHERE QUESTION_ID = ?',[$id]);
 
-        $this->di->views->add('prj-hrk/questions', ['title' => $title, 'text' => $text, 'created' => $created, 'author' => $author, 'id' => $id, 'score' => $score, 'tags' => $tags]);
+        $this->di->views->add('prj-hrk/questions', ['title' => $title, 'replies' => $replies, 'text' => $text, 'created' => $created, 'author' => $author, 'id' => $id, 'score' => $score, 'tags' => $tags]);
     }
 }

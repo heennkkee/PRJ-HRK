@@ -19,7 +19,26 @@
             }
             echo implode($test, ', ');
             ?>
-        </span><br><br> 
+        </span><br><br>
         <span class="author"><?=$author?> <?=$created?></span><br>
+        <span class="link-bar">
+            Sortera:
+            <?php
+            $url = $this->di->request->getCurrentUrl();
+            $parts = explode('/', $url);
+
+            unset($parts[10]);
+            $standard = implode('/', $parts);
+            $parts[10] = 'score';
+            $score = implode('/', $parts);
+            $parts[10] = 'date';
+            $date = implode('/', $parts);
+
+            echo '<a href="' . $this->di->url->create($standard) . '">Standard</a>, ';
+            echo '<a href="' . $this->di->url->create($score) . '">Poäng</a>, ';
+            echo '<a href="' . $this->di->url->create($date) . '">Datum</a>';
+            ?>
+        </span>
     </div>
+
 </div>

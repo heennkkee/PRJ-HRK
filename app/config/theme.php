@@ -59,7 +59,7 @@ return [
     //    'jquery' => '//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js',
 
         // Array with javscript-files to include
-        'javascript_include' => [],
+        'javascript_include' => ['js/javascript.js'],
 
         // Use google analytics for tracking, set key or null to disable
         'google_analytics' => null,
