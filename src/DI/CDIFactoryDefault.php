@@ -47,7 +47,7 @@ class CDIFactoryDefault extends CDI
         $this->set('form', '\Mos\HTMLForm\CForm');
 
         $this->set('rss', function () {
-            $rss = new \henaro\rss\Crss(['feedDescription' => ['title' => 'Amazing questions', 'link' => $this->url->create('')]]);
+            $rss = new \henaro\rss\Crss(['feedDescription' => ['title' => 'Svenska högtider', 'description' => 'Frågor och tankar om våra svenska högtider.', 'link' => $this->url->create('')]]);
             return $rss;
         });
 

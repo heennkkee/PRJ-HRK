@@ -70,6 +70,7 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
                    }
                    if ($sqlBool) {
                        $form->saveInSession = false;
+                       $this->di->rss->insertRSS(['LINK' => $this->di->url->create('questions/view/' . $questionID), 'DESCRIPTION' => substr(strip_tags($this->di->textFilter->doFilter($form->Value('text'), 'markdown')), 0, 50), 'TITLE' => strip_tags($form->Value('title'))]);
                        return [true, $questionID];
                    } else {
                        $form->saveInSession = true;
@@ -189,17 +190,21 @@ class CQuestionsController implements \Anax\DI\IInjectionAware
             $res = $this->questions->find($id);
         }
 
-        if (!$res) {
-            $this->di->views->add('prj-hrk/content', ['content' => '<h3>Inga frågor att visa...</h3>']);
-            return;
-        }
+
 
         if (is_array($res)) {
+            $this->di->views->add('prj-hrk/newPost');
             $this->di->views->add('prj-hrk/content', ['content' => '<h3>Visar alla frågor</h3>']);
             foreach($res as $subRes) {
                 $this->listPosts($subRes);
             }
+            if (!$res) {
+                $this->di->views->add('prj-hrk/content', ['content' => '<h4>Inga frågor att visa...</h4>']);
+            }
         } else {
+            if (!$res) {
+                die('Ingen fråga med det IDt..');
+            }
             $res = $res->getProperties();
             $title = htmlspecialchars($res['TITLE']);
             $text = $this->di->textFilter->doFilter(htmlspecialchars($res['TEXT']), 'markdown');

@@ -27,11 +27,11 @@
             $url = $this->di->request->getCurrentUrl();
             $parts = explode('/', $url);
 
-            unset($parts[10]);
+            unset($parts[13]);
             $standard = implode('/', $parts);
-            $parts[10] = 'score';
+            $parts[13] = 'score';
             $score = implode('/', $parts);
-            $parts[10] = 'date';
+            $parts[13] = 'date';
             $date = implode('/', $parts);
 
             echo '<a href="' . $this->di->url->create($standard) . '">Standard</a>, ';

@@ -186,6 +186,7 @@ class CUsersController implements \Anax\DI\IInjectionAware
                        $form->Value('description')
                    ]);
 
+                   $this->di->rss->insertRSS(['LINK' => $this->di->url->create('users/view/' . $form->Value('acronym')), 'DESCRIPTION' => 'Ny användare: ' . $form->Value('name') . ' registrerad på sidan!', 'TITLE' => 'Ny användare!']);
                    return $bool;
                }
            ],

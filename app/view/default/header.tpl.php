@@ -1,4 +1,4 @@
-<span class='sitetitle'><?=isset($siteTitle) ? $siteTitle : "Superquestions"?></span>
+<span class='sitetitle'><?=isset($siteTitle) ? $siteTitle : "Svenska högtider"?></span>
 <?php
     if (isset($_SESSION['USER'])) {
 ?>
@@ -10,4 +10,4 @@
 <?php
     }
 ?>
-<span class='siteslogan'><?=isset($siteTagline) ? $siteTagline : "Questions about a superdupersubject"?></span>
+<span class='siteslogan'><?=isset($siteTagline) ? $siteTagline : "Frågor och tankar om de svenska högtiderna"?></span>

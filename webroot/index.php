@@ -5,13 +5,16 @@ $app->session();
 
 if (!isset($_SESSION['USER'])) {
     $registering = $app->request->getRouteParts();
-    if ($registering[0] === 'users' && (isset($registering[1]) ? (($registering[1] === 'register') ? true : (($registering[1] === 'login') ? true : false)) : false)) {
-        $app->router->handle();
+    $nonRegisteredSites = ['setup', 'userSetup', 'rss', 'about'];
+    if (in_array($registering[0], $nonRegisteredSites)) {
+
+    } else if ($registering[0] === 'users' && (isset($registering[1]) ? (($registering[1] === 'register') ? true : (($registering[1] === 'login') ? true : false)) : false)) {
+
     } else {
         $app->views->add('error/403', [], 'main');
+        $app->theme->render();
+        die();
     }
-    $app->theme->render();
-    die();
 }
 
 $app->router->add('questions', function () use ($app) {
@@ -103,9 +106,10 @@ $app->router->add('setup', function () use ($app) {
     ])->execute();
 
     $app->db->insert('TAGS', ['DESCRIPTION']);
-    $app->db->execute(['Tagg 1']);
-    $app->db->execute(['Tagg 2']);
-    $app->db->execute(['Tagg 3']);
+    $app->db->execute(['Vår']);
+    $app->db->execute(['Sommar']);
+    $app->db->execute(['Höst']);
+    $app->db->execute(['Vinter']);
 });
 
 $app->router->add('tags', function () use ($app) {
@@ -162,14 +166,11 @@ $app->router->add('', function () use ($app) {
 });
 
 $app->router->add('about', function () use ($app) {
-    $app->views->add('prj-hrk/content', [
-        'content' => '<h2>About</h2>',
-    ]);
+    $app->views->add('prj-hrk/about');
 });
 
 $app->router->add('rss', function () use ($app) {
     //$app->rss->clearRSS();
-    //$app->rss->insertRSS(['LINK' => 'http://test.com', 'DESCRIPTION' => 'nytt rss "item"', 'TITLE' => 'Titel']);
     $app->rss->getRSS();
     die();
 });
